@@ -1,0 +1,149 @@
+#version 430 core
+//Inverse fast DCT algorithm adapted from libavcodec/proresdec.c and libavcodec/simple_idct_template.c
+
+//Input is a de-coded, de-quantized 8x8 DCT block from a ProRes 10-bit video
+//Decoded DCT blocks and qmat are intermediate output from FFmpeg
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 2) buffer dct_block
+{
+    int block[64];
+
+};
+
+const int W1 = 22725;
+const int W2 = 21407;
+const int W3 = 19265;
+const int W4 = 16384;
+const int W5 = 12873; 
+const int W6 = 8867;
+const int W7 = 4520;
+
+
+const int dc_shift = 1;
+const int extra_shift = 2;
+const int row_shift = 13;
+const int col_shift = 18;
+
+int[64] iDCTCol(in int block[64], in int ind) {
+     int a0 = W4 * (block[ind] + ((1<<(col_shift-1))/W4));
+     int a1 = a0;
+     int a2 = a0;
+     int a3 = a0;
+
+     a0 += W2 * block[ind + (8*2)];
+     a1 += W6 * block[ind + (8*2)];
+     a2 += -W6 * block[ind + (8*2)];
+     a3 += -W2 * block[ind + (8*2)];
+
+     int b0 = W1 * block[ind + 8];
+     int b1 = W3 * block[ind + 8];
+     int b2 = W5 * block[ind + 8];
+     int b3 = W7 * block[ind + 8];
+
+     b0 += W3 * block[ind + (8*3)];
+     b1 += -W7 * block[ind + (8*3)];
+     b2 += -W1 * block[ind + (8*3)];
+     b3 += -W5 * block[ind + (8*3)];
+
+     a0 += W4 * block[ind + (8*4)];
+     a1 += -W4 * block[ind + (8*4)];
+     a2 += -W4 * block[ind + (8*4)];
+     a3 += W4 * block[ind + (8*4)];
+
+     b0 += W5 * block[ind + (8*5)];
+     b1 += -W1 * block[ind + (8*5)];
+     b2 += W7 * block[ind + (8*5)];
+     b3 += W3 * block[ind + (8*5)];
+
+     a0 += W6 * block[ind + (8*6)];
+     a1 += -W2 * block[ind + (8*6)];
+     a2 += W2 * block[ind + (8*6)];
+     a3 += -W6 * block[ind + (8*6)];
+     
+
+     b0 += W7 * block[ind + (8*7)];
+     b1 += -W5 * block[ind + (8*7)];
+     b2 += W3 * block[ind + (8*7)];
+     b3 += -W1 * block[ind + (8*7)];
+
+     
+     block[ind] = ((a0 + b0) >> col_shift);
+     block[ind + 8] = ((a1 + b1) >> col_shift);
+     block[ind + 16] = ((a2 + b2) >> col_shift);
+     block[ind + 24] = ((a3 + b3) >> col_shift);
+     block[ind + 32] = ((a3 - b3) >> col_shift);
+     block[ind + 40] = ((a2 - b2) >> col_shift);
+     block[ind + 48] = ((a1 - b1) >> col_shift);
+     block[ind + 56] = ((a0 - b0) >> col_shift);
+
+     return block;
+}
+
+
+int[64] iDCTRow(in int block[64], in int ind) {
+    int a0 = (W4 * block[ind]) + ( 1 << (row_shift + (extra_shift - 1 )));
+    int a1 = a0;
+    int a2 = a0;
+    int a3 = a0;
+
+    a0 += W2 * block[ind + 2];
+    a1 += W6 * block[ind + 2];
+    a2 -= W6 * block[ind + 2];
+    a3 -= W2 * block[ind + 2];
+
+    int b0 = 0;
+    int b1 = 0;
+    int b2 = 0;
+    int b3 = 0;
+
+    b0 = W1 * block[ind + 1];
+    b0 += W3 * block[ind + 3];
+    b1 = W3 * block[ind + 1];
+    b1 += -W7 * block[ind + 3];
+    b2 = W5 * block[ind + 1];
+    b2 += -W1 * block[ind + 3];
+    b3 = W7 * block[ind + 1];
+    b3 += -W5 * block[ind + 3];
+
+    a0 += W4 * block[ind + 4] + W6 * block[ind + 6];
+    a1 += -W4 * block[ind + 4] - W2 * block[ind + 6];
+    a2 += -W4 * block[ind + 4] + W2 * block[ind + 6];
+    a3 += W4 * block[ind + 4] - W6 * block[ind + 6];
+
+    b0 += W5 * block[ind + 5];
+    b0 += W7 * block[ind + 7];
+
+    b1 += -W1 * block[ind + 5];
+    b1 += -W5 * block[ind + 7];
+
+    b2 += W7 * block[ind + 5];
+    b2 += W3 * block[ind + 7];
+
+    b3 += W3 * block[ind + 5];
+    b3 += -W1 * block[ind + 7];
+
+    block[ind + 0] = (a0 + b0) >> (row_shift + extra_shift);
+    block[ind + 7] = (a0 - b0) >> (row_shift + extra_shift);
+    block[ind + 1] = (a1 + b1) >> (row_shift + extra_shift);
+    block[ind + 6] = (a1 - b1) >> (row_shift + extra_shift);
+    block[ind + 2] = (a2 + b2) >> (row_shift + extra_shift);
+    block[ind + 5] = (a2 - b2) >> (row_shift + extra_shift);
+    block[ind + 3] = (a3 + b3) >> (row_shift + extra_shift);
+    block[ind + 4] = (a3 - b3) >> (row_shift + extra_shift);
+
+    return block;
+}
+
+void main() {
+    //TODO: Using separable fast DCT from FFmpeg, not optimised for GPU 
+    for(int i=0; i<8; i++) { 
+       block = iDCTRow(block, i * 8);           
+    }
+
+    for(int i = 0; i < 8; i++) {
+        block[i] += 8192;
+        block = iDCTCol(block, i);
+    }
+}
