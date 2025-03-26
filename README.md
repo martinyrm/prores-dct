@@ -1,6 +1,6 @@
 # GLSL Inverse Discrete Cosine Transform (for 10-bit ProRes)
 
-This repository contains a port of FFmpeg's ProRes iDCT to GLSL, including OpenGL host code, and verification tests. This is a naïve translation from [](libavcodec/simple_idct_template.c), where no attempt has been made to optimise for execution on GPU and the shader operates on 8x8 blocks at a time using the separable fast iDCT.
+This repository contains a port of FFmpeg's ProRes iDCT to GLSL, including OpenGL host code, and verification tests. This is a naïve translation from [libavcodec/simple_idct_template.c](libavcodec/simple_idct_template.c), where no attempt has been made to optimise for execution on GPU and the shader operates on 8x8 blocks at a time using the separable fast iDCT.
 
 ## Verification
 
