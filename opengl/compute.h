@@ -47,13 +47,13 @@ class Compute {
 	
     	int success;
     	char infoLog[512];
-
-	    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 	
-	    if (!success) {
-		    glGetShaderInfoLog(shader, 512, NULL, infoLog);
-		    std::cerr << "ERROR\n" << infoLog << std::endl;
-	    }
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+	
+	if (!success) {
+	   glGetShaderInfoLog(shader, 512, NULL, infoLog);
+	   std::cerr << "ERROR\n" << infoLog << std::endl;
+	}
 
 
         // create program
@@ -62,14 +62,14 @@ class Compute {
         glLinkProgram( id );
 	
     	int success2;
-	    glGetProgramiv(id, GL_LINK_STATUS, &success2);
+	glGetProgramiv(id, GL_LINK_STATUS, &success2);
 
 	
-	    char infoLog2[512];
-	    if (!success2) {
-		    glGetProgramInfoLog(id, 512, NULL, infoLog2);
-		    std::cerr << "Error Linking problem \n" << infoLog << std::endl;
-	    }
+	char infoLog2[512];
+	if (!success2) {
+		glGetProgramInfoLog(id, 512, NULL, infoLog2);
+		std::cerr << "Error Linking problem \n" << infoLog << std::endl;
+	}
         // cleanup
         glDeleteShader( shader );
 
