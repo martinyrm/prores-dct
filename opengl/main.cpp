@@ -77,7 +77,7 @@ int main() {
 
         dctResult.write((char*) post_blocks, sizeof(uint16_t) * 64); 
 
-        std::cout << std::endl;   //We now write the next block into the SSBO
+        //We now write the next block into the SSBO
         offset += 64;
         block_no += 1;
         compute_shader.update_ssbo(&blocks[offset], ssbo);
